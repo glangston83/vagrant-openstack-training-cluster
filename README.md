@@ -23,6 +23,9 @@ Controller Node:
   Glance:
     User: glance
     Password: openstack
+  Cinder:
+    User: cinder
+    Password: openstack
   Demo:
     User: user
     Password: openstack
@@ -40,3 +43,5 @@ http://localhost:9080/dashboard
 domain: default
 user: admin
 password: openstack
+
+TODO: http://docs.openstack.org/mitaka/install-guide-rdo/cinder-storage-install.html
