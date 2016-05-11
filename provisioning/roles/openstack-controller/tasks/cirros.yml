@@ -1,0 +1,6 @@
+- name: Init Env
+  shell: . /tmp/admin-openrc
+- name: Download Cirros .img
+  shell: wget http://download.cirros-cloud.net/0.3.4/cirros-0.3.4-x86_64-disk.img
+- name: Establish Image on Openstack
+  shell: openstack image create "cirros" --file /home/vagrant/cirros-0.3.4-x86_64-disk.img --disk-format qcow2 --container-format bare --public

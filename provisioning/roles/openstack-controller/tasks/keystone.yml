@@ -1,0 +1,71 @@
+- name: Install and Configure keystone components
+  yum:
+    pkg: openstack-keystone
+    state: latest
+- name: Install httpd
+  yum:
+    pkg: httpd
+    state: latest
+- name: Install mod_wsgi
+  yum:
+    pkg: mod_wsgi
+    state: latest
+- name: configure keystone via keystone.conf file
+  template:
+    src: keystone.conf.j2
+    dest: /etc/keystone/keystone.conf
+- name: create wsgi-keystone conf
+  template:
+    src: wsgi-keystone.conf.j2
+    dest: /etc/httpd/conf.d/wsgi-keystone.conf
+- name: configure httpd via httpd.conf file
+  template:
+    src: httpd.conf.j2
+    dest: /etc/httpd/conf/httpd.conf
+  notify:
+    - Enable httpd service - start/enable
+- name: Enable httpd service - start/enable
+  service:
+    name: httpd
+    state: started
+    enabled: true
+- name: Populate the Identity Service Database
+  shell: su -s /bin/sh -c "keystone-manage db_sync" keystone
+- name: Initialize Fernet keys
+  shell: keystone-manage fernet_setup --keystone-user keystone --keystone-group keystone
+- name: Create Service entity for Identity Service
+  shell: openstack service create --name keystone --description "OpenStack Identity" identity
+- name: Create the Identity Service API Endpoint - public
+  shell: openstack endpoint create --region RegionOne identity public http://controller:5000/v3
+- name: Create the Identity Service API Endpoint - internal
+  shell: openstack endpoint create --region RegionOne identity internal http://controller:5000/v3
+- name: Create the Identity Service API Endpoint - admin
+  shell: openstack endpoint create --region RegionOne identity admin http://controller:35357/v3
+- name: Create the default Domain
+  shell: openstack domain create --description "Default Domain" default
+- name: Create the admin Project
+  shell: openstack project create --domain default --description "Admin Project" admin
+- name: Create the admin user
+  shell: openstack user create --domain default --password openstack admin
+- name: Create the admin roles
+  shell: openstack role create admin
+- name: Add the admin role to the admin project and user
+  shell: openstack role add --project admin --user admin admin
+- name: Create the service project
+  shell: openstack project create --domain default --description "Service Project" service
+- name: Create the demo project
+  shell: openstack project create --domain default --description "Demo Project" demo
+- name: Create the demo user
+  shell: openstack user create --domain default --password openstack demo
+- name: Create the user role
+  shell: openstack role create user
+- name: Add the user role to the demo project and user
+  shell: openstack role add --project demo --user demo user
+- name: Drop admin-openrc file
+  template:
+    src: admin-openrc.j2
+    dest: /tmp/admin-openrc
+- name: Drop demo-openrc file
+  template:
+    src: demo-openrc.j2
+    dest: /tmp/demo-openrc

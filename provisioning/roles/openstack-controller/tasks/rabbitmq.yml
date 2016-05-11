@@ -1,0 +1,13 @@
+- name: Install and Configure RabbitMQ server, and set initial configuration
+  yum: 
+    pkg: rabbitmq-server
+    state: present
+- name: Enable and Start RabbitMQ
+  service: 
+    name: rabbitmq-server
+    state: restarted
+    enabled: true
+- name: Create User openstack, and with default password
+  command: rabbitmqctl add_user openstack openstack
+- name: Set permissions on openstack User
+  command: rabbitmqctl set_permissions openstack ".*" ".*" ".*"

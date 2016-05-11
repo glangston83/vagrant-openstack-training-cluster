@@ -1,0 +1,40 @@
+- name: Bootstrap Compute node, Install Nova Compute package
+  yum:
+    name: openstack-nova-compute
+    state: latest
+- name: Drop Template of nova.conf for node
+  template:
+    src: nova.conf.j2
+    dest: /etc/nova/nova.conf
+- name: Enable/Start libvirtd and nova-compute service
+  service:
+    name: "{{item}}"
+    state: started
+    enabled: true
+  with_items:
+    - libvirtd
+    - openstack-nova-compute
+- name: Install Neutron Bridge and ebtables
+  yum:
+    name: "{{item}}"
+    state: latest
+  with_items:
+    - openstack-neutron-linuxbridge
+    - ebtables
+- name: Drop Neutron template conf for Compute node
+  template:
+    src: neutron.conf.j2
+    dest: /etc/neutron/neutron.conf
+- name: Drop Linux Bridge ML2 agent plugin template conf
+  template:
+    src: linuxbridge_agent.ini.j2
+    dest: /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+- name: Restart Nova Compute service
+  service:
+    name: openstack-nova-compute
+    state: restarted
+- name: Enable/Start neutron-linuxbridge-agent
+  service:
+    name: neutron-linuxbridge-agent
+    state: started
+    enabled: true

@@ -1,0 +1,13 @@
+- name: Install Memcached and enable
+  yum: 
+    pkg: memcached
+    state: present
+- name: Install python-memcached client
+  yum: 
+    pkg: python-memcached
+    state: present
+- name: start/enable memcached service
+  service: 
+    name: memcached
+    state: started
+    enabled: true

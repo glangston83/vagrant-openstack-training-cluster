@@ -1,0 +1,15 @@
+- name: Install openstack-dashboard package
+  yum:
+    name: openstack-dashboard
+    state: latest
+- name: Drop local_settings template config
+  template:
+    src: local_settings.j2
+    dest: /etc/openstack-dashboard/local_settings
+- name: Restart Httpd and Memcache services
+  service:
+    name: "{{ item }}"
+    state: restarted
+  with_items:
+    - httpd
+    - memcached

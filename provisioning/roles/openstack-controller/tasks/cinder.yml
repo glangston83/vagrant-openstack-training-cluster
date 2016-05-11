@@ -1,0 +1,57 @@
+- name: Create cinder database
+  mysql_db:
+    name: cinder
+    state: present
+- name: Create cinder user with privileges
+  mysql_user:
+    name: cinder
+    password: openstack
+    priv: 'cinder.*:ALL'
+    state: present
+    host: '%'
+- name: Create the cinder user
+  shell: openstack user create --domain default --password openstack cinder
+- name: Add the admin role to the cinder user and service project
+  shell: openstack role add --project service --user cinder admin
+- name: Create the cinder service entity
+  shell: openstack service create --name cinder --description "OpenStack Block Storage" volume
+- name: Create the cinderv2 service entity
+  shell: openstack service create --name cinderv2 --description "OpenStack Block Storage" volumev2
+- name: Create the Block Storage service API endpoint public
+  shell: openstack endpoint create --region RegionOne volume public http://controller:8776/v1/%\(tenant_id\)s
+- name: Create the Block Storage service API endpoint internal
+  shell: openstack endpoint create --region RegionOne volume internal http://controller:8776/v1/%\(tenant_id\)s
+- name: Create the Block Storage service API endpoint admin
+  shell: openstack endpoint create --region RegionOne volume admin http://controller:8776/v1/%\(tenant_id\)s
+- name: Create the Block Storage service v2 API endpoint public
+  shell: openstack endpoint create --region RegionOne volumev2 public http://controller:8776/v2/%\(tenant_id\)s
+- name: Create the Block Storage service v2 API endpoint internal
+  shell: openstack endpoint create --region RegionOne volumev2 internal http://controller:8776/v2/%\(tenant_id\)s
+- name: Create the Block Storage service v2 API endpoint admin
+  shell: openstack endpoint create --region RegionOne volumev2 admin http://controller:8776/v2/%\(tenant_id\)s
+
+- name: Install openstack-cinder package
+  yum:
+    name: openstack-cinder
+    state: latest
+
+- name: Drop Cinder template conf
+  template:
+    src: cinder.conf.j2
+    dest: /etc/cinder/cinder.conf
+
+- name: Populate the Block Storage Service Database
+  shell: su -s /bin/sh -c "cinder-manage db sync" cinder
+- name: Restart Nova Service
+  service:
+    name: openstack-nova-api
+    state: restarted
+
+- name: Enable/Start Block Storage API Service
+  service:
+    name: "{{ item }}"
+    state: started
+    enabled: true
+  with_items:
+    - openstack-cinder-api
+    - openstack-cinder-scheduler

@@ -1,0 +1,79 @@
+- name: Create neutron database
+  mysql_db:
+    name: neutron
+    state: present
+- name: Create neutron user with privileges
+  mysql_user:
+    name: neutron
+    password: openstack
+    priv: 'neutron.*:ALL'
+    state: present
+    host: '%'
+- name: Create the neutron user
+  shell: openstack user create --domain default --password openstack neutron
+- name: Add the admin role to the neutron user and service project
+  shell: openstack role add --project service --user neutron admin
+- name: Create the neutron service entity
+  shell: openstack service create --name neutron --description "OpenStack Networking" network
+- name: Create the Networking service API endpoint public
+  shell: openstack endpoint create --region RegionOne network public http://controller:9696
+- name: Create the Networking service API endpoint internal
+  shell: openstack endpoint create --region RegionOne network internal http://controller:9696
+- name: Create the Networking service API endpoint admin
+  shell: openstack endpoint create --region RegionOne network admin http://controller:9696
+- name: Install openstack-neutron packages
+  yum:
+    name: "{{item}}"
+    state: latest
+  with_items:
+    - openstack-neutron
+    - openstack-neutron-ml2
+    - openstack-neutron-linuxbridge
+    - ebtables
+- name: Drop Neutron template conf
+  template:
+    src: neutron.conf.j2
+    dest: /etc/neutron/neutron.conf
+- name: Drop ML2 Plugin template conf
+  template:
+    src: ml2_conf.ini.j2
+    dest: /etc/neutron/plugins/ml2/ml2_conf.ini
+- name: Drop Linux Bridge Agent template conf
+  template:
+    src: linuxbridge_agent.ini.j2
+    dest: /etc/neutron/plugins/ml2/linuxbridge_agent.ini
+- name: Drop Layer 3 Agent template conf
+  template:
+    src: l3_agent.ini.j2
+    dest: /etc/neutron/l3_agent.ini
+- name: Drop DHCP Agent template conf
+  template:
+    src: dhcp_agent.ini.j2
+    dest: /etc/neutron/dhcp_agent.ini
+- name: Drop Metadata Agent template conf
+  template:
+    src: metadata_agent.ini.j2
+    dest: /etc/neutron/metadata_agent.ini
+- name: Build symlink for ml2 plugins
+  shell: ln -s /etc/neutron/plugins/ml2/ml2_conf.ini /etc/neutron/plugin.ini
+- name: Populate the Neutron Database
+  shell: su -s /bin/sh -c "neutron-db-manage --config-file /etc/neutron/neutron.conf --config-file /etc/neutron/plugins/ml2/ml2_conf.ini upgrade head" neutron
+- name: Restart the Compute API service
+  service:
+    name: openstack-nova-api
+    state: restarted
+- name: Enable/Start Networking Services
+  service:
+    name: "{{item}}"
+    state: started
+    enabled: true
+  with_items:
+    - neutron-server
+    - neutron-linuxbridge-agent
+    - neutron-dhcp-agent
+    - neutron-metadata-agent
+- name: Enable/Start Neutron L3 Agent Service
+  service:
+    name: neutron-l3-agent
+    state: started
+    enabled: true

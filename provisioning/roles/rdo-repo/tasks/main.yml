@@ -1,0 +1,10 @@
+---
+- name: Install RDO repo.
+  yum:
+    name: "{{ rdo_repo_url }}"
+    state: present
+  register: result
+  until: '"failed" not in result'
+  retries: 5
+  delay: 10
+

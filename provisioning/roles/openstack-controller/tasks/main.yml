@@ -1,0 +1,27 @@
+- name: Install Python Openstack Client
+  yum:
+    pkg: python-openstackclient
+    state: present
+- name: Install MariaDB and secure_installation steps
+  include: mariadb.yml
+- name: Install MongoDB and enable/start
+  include: mongodb.yml
+- name: Install RabbitMQ and enable/start
+  include: rabbitmq.yml
+- name: Install Memcached and enable/start
+  include: memcached.yml
+- name: Install Keystone configuration and components
+  include: keystone.yml
+- name: Install Glance configuration and components
+  include: glance.yml
+- name: Install Nova configuration and components
+  include: nova.yml
+- name: Install Neutron configuration and components
+  include: neutron.yml
+- name: Install Horizon configuration and components
+  include: horizon.yml
+  ## TODO - support cirros initial image drop
+#- name: Establish initial image for Compute Instances - Cirros
+#  include: cirros.yml
+- name: Install Cinder configuration and components
+  include: cinder.yml

@@ -1,0 +1,56 @@
+- name: Create nova database
+  mysql_db:
+    name: nova
+    state: present
+- name: Create nova_api database
+  mysql_db:
+    name: nova_api
+    state: present
+- name: Create nova user with privileges
+  mysql_user:
+    name: nova
+    password: openstack
+    priv: 'nova%.*:ALL'
+    state: present
+    host: '%'
+- name: Create the nova user
+  shell: openstack user create --domain default --password openstack nova
+- name: Add the admin role to the nova user and service project
+  shell: openstack role add --project service --user nova admin
+- name: Create the nova service entity
+  shell: openstack service create --name nova --description "OpenStack Compute" compute
+- name: Create the Compute service API endpoint public
+  shell: openstack endpoint create --region RegionOne compute public http://controller:8774/v2.1/%\(tenant_id\)s
+- name: Create the Compute service API endpoint internal
+  shell: openstack endpoint create --region RegionOne compute internal http://controller:8774/v2.1/%\(tenant_id\)s
+- name: Create the Compute service API endpoint admin
+  shell: openstack endpoint create --region RegionOne compute admin http://controller:8774/v2.1/%\(tenant_id\)s
+- name: Install openstack-nova packages
+  yum:
+    name: "{{item}}"
+    state: latest
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-conductor
+    - openstack-nova-console
+    - openstack-nova-novncproxy
+    - openstack-nova-scheduler
+- name: Drop Nova template conf
+  template:
+    src: nova.conf.j2
+    dest: /etc/nova/nova.conf
+- name: Populate the Compute Service Databases 1
+  shell: su -s /bin/sh -c "nova-manage api_db sync" nova
+- name: Populate the Compute Service Databases 2
+  shell: su -s /bin/sh -c "nova-manage db sync" nova
+- name: Enable/Start Compute Services
+  service:
+    name: "{{item}}"
+    state: started
+    enabled: true
+  with_items:
+    - openstack-nova-api
+    - openstack-nova-consoleauth
+    - openstack-nova-scheduler
+    - openstack-nova-conductor
+    - openstack-nova-novncproxy

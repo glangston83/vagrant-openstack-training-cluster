@@ -1,0 +1,24 @@
+- name: Install MongoDB
+  yum:
+    pkg: mongodb
+    state: present
+- name: Install MongoDB-Server
+  yum:
+    pkg: mongodb-server
+    state: present
+- name: enable and restart mongodb-server
+  service: 
+    name: mongod.service
+    state: restarted
+    enabled: true 
+- name: configure mariadb-server
+  template:
+    src: mongod.conf.j2
+    dest: /etc/mongod.conf
+  notify:
+    - enable and restart mongodb-server
+- name: enable and restart mongodb-server
+  service:
+    name: mongod.service
+    state: restarted
+    enabled: true

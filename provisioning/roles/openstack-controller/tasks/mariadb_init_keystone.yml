@@ -1,0 +1,11 @@
+- name: Prep initial data structures for maria DB Schemas
+  mysql_db: 
+    name: keystone
+    state: present
+- name: Create keystone user with privileges
+  mysql_user: 
+    name: keystone
+    password: openstack 
+    priv: 'keystone.*:ALL' 
+    state: present
+    host: '%'

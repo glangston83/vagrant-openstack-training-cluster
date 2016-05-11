@@ -1,0 +1,29 @@
+- name: Install MariaDB
+  yum:
+    pkg: mariadb
+    state: present
+- name: Install MariaDB-Server
+  yum:
+    pkg: mariadb-server
+    state: present
+- name: Install python2-PyMySQL client
+  yum:
+    pkg: python2-PyMySQL
+    state: present
+- name: Install python-mysql client
+  yum: 
+    pkg: MySQL-python
+    state: present
+- name: configure mariadb-server
+  template: 
+    src: mariadb-server.cnf.j2
+    dest: /etc/my.cnf.d/mariadb-server.cnf
+  notify: 
+    - enable and restart mariadb-server
+- name: enable and restart mariadb-server
+  service: 
+    name: mariadb.service
+    state: restarted
+    enabled: true 
+- include: mariadb_init_keystone.yml
+- include: mariadb_secure_installation.yml

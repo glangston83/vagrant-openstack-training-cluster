@@ -1,0 +1,19 @@
+- name: install chrony
+  yum:
+    pkg: chrony
+    state: present
+  tags:
+    - chrony
+    - chrony-install
+
+- name: configure chrony
+  template:
+    src: chrony.conf.j2
+    dest: /etc/chrony.conf
+  notify:
+    - restart chrony
+  tags:
+    - chrony
+    - chrony-configure
+
+- meta: flush_handlers

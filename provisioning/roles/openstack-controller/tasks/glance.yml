@@ -1,0 +1,47 @@
+- name: Create glance database
+  mysql_db:
+    name: glance
+    state: present
+- name: Create glance user with privileges
+  mysql_user:
+    name: glance
+    password: openstack
+    priv: 'glance.*:ALL'
+    state: present
+    host: '%'
+- name: Create the glance user
+  shell: openstack user create --domain default --password openstack glance
+- name: Add the admin role to the glance user and service project
+  shell: openstack role add --project service --user glance admin
+- name: Create the glance service entity
+  shell: openstack service create --name glance --description "OpenStack Image" image
+- name: Create the Image service API endpoint public
+  shell: openstack endpoint create --region RegionOne image public http://controller:9292
+- name: Create the Image service API endpoint internal
+  shell: openstack endpoint create --region RegionOne image internal http://controller:9292
+- name: Create the Image service API endpoint admin
+  shell: openstack endpoint create --region RegionOne image admin http://controller:9292
+- name: Install openstack-glance package
+  yum:
+    name: openstack-glance
+    state: latest
+- name: Drop Glance API template conf
+  template:
+    src: glance-api.conf.j2
+    dest: /etc/glance/glance-api.conf
+- name: Drop Glance Registry template conf
+  template:
+    src: glance-registry.conf.j2
+    dest: /etc/glance/glance-registry.conf
+- name: Populate the Image Service Database
+  shell: su -s /bin/sh -c "glance-manage db_sync" glance
+- name: Enable/Start Glance API Service
+  service:
+    name: openstack-glance-api
+    state: started
+    enabled: true
+- name: Enable/Start Glance Registry Service
+  service:
+    name: openstack-glance-registry
+    state: started
+    enabled: true
